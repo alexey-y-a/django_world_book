@@ -17,37 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Generate SBOM with official action
+        uses: cyclonedx/gh-action-generate-sbom@v1
         with:
-          python-version: '3.9'
-
-      - name: Install cyclonedx-bom
-        run: pip install cyclonedx-bom
-
-      - name: Generate SBOM
-        run: |
-          echo "Looking for dependency files..."
-          ls -la | grep -E "(requirements|setup|pyproject|Pipfile)"
-          
-          if [ -f "requirements.txt" ]; then
-            echo "Found requirements.txt, generating SBOM..."
-            cyclonedx-py --format json --output sbom.json requirements requirements.txt
-          elif [ -f "setup.py" ]; then
-            echo "Found setup.py, generating SBOM..."
-            cyclonedx-py --format json --output sbom.json environment setup.py 
-          elif [ -f "pyproject.toml" ]; then
-            echo "Found pyproject.toml, generating SBOM..."
-            cyclonedx-py --format json --output sbom.json poetry pyproject.toml 
-          else
-            echo "ERROR: No dependency files found!"
-            echo "Available files in root:"
-            ls -la
-            exit 1
-          fi
-          
-          echo "SBOM generated successfully:"
-          ls -la sbom.json
+          output-format: 'json'
+          output-file: 'sbom.json'
+          project-type: 'python'
+          requirements-files: 'requirements.txt'
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
