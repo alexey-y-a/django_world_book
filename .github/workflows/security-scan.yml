@@ -1,0 +1,136 @@
+name: SBOM and Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DTRACK_URL: "http://185.55.56.234:8081/api/v1/bom"
+  PROJECT_NAME: "django-world-book"
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install cyclonedx-bom
+        run: pip install cyclonedx-bom
+
+      - name: Generate SBOM
+        run: |
+          echo "Looking for dependency files..."
+          ls -la | grep -E "(requirements|setup|pyproject|Pipfile)"
+          
+          if [ -f "requirements.txt" ]; then
+            echo "Found requirements.txt, generating SBOM..."
+            cyclonedx-py -r -i requirements.txt --format json --output sbom.json
+          elif [ -f "setup.py" ]; then
+            echo "Found setup.py, generating SBOM..."
+            cyclonedx-py -e setup.py --format json --output sbom.json
+          elif [ -f "pyproject.toml" ]; then
+            echo "Found pyproject.toml, generating SBOM..."
+            cyclonedx-py -e pyproject.toml --format json --output sbom.json
+          else
+            echo "ERROR: No dependency files found!"
+            echo "Available files in root:"
+            ls -la
+            exit 1
+          fi
+          
+          echo "SBOM generated successfully:"
+          ls -la sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 7
+
+  dependency-check-scan:
+    runs-on: ubuntu-latest
+    needs: generate-sbom
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download Dependency-Check
+        run: |
+          wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.10/dependency-check-9.0.10-release.zip
+          unzip -q dependency-check-9.0.10-release.zip
+          mkdir -p reports
+
+      - name: Run Dependency-Check
+        run: |
+          ./dependency-check/bin/dependency-check.sh --scan . --project "$PROJECT_NAME" --format HTML --out reports/ --disableAssembly
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/
+          retention-days: 7
+
+  upload-to-dtrack:
+    runs-on: ubuntu-latest
+    needs: generate-sbom
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+
+      - name: Upload to Dependency-Track
+        env:
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+        run: |
+          echo "Uploading SBOM to Dependency-Track..."
+          
+          if [ ! -f "sbom.json" ]; then
+            echo "ERROR: sbom.json not found!"
+            ls -la
+            exit 1
+          fi
+          
+          echo "File size: $(wc -l < sbom.json) lines"
+          
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$DTRACK_URL" \
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -H "Content-Type: multipart/form-data" \
+            -F "autoCreate=true" \
+            -F "projectName=$PROJECT_NAME" \
+            -F "projectVersion=${{ github.sha }}" \
+            -F "bom=@sbom.json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$RESPONSE" | grep -v "HTTP_CODE:")
+          
+          echo "Response HTTP Code: $HTTP_CODE"
+          echo "Response: $RESPONSE_BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: Failed to upload SBOM"
+            exit 1
+          fi
+          
+          
