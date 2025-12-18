@@ -32,13 +32,13 @@ jobs:
           
           if [ -f "requirements.txt" ]; then
             echo "Found requirements.txt, generating SBOM..."
-            cyclonedx-py -r -i requirements.txt --format json --output sbom.json
+            cyclonedx-py requirements.txt --format json --output sbom.json
           elif [ -f "setup.py" ]; then
             echo "Found setup.py, generating SBOM..."
-            cyclonedx-py -e setup.py --format json --output sbom.json
+            cyclonedx-py environment setup.py --format json --output sbom.json
           elif [ -f "pyproject.toml" ]; then
             echo "Found pyproject.toml, generating SBOM..."
-            cyclonedx-py -e pyproject.toml --format json --output sbom.json
+            cyclonedx-py poetry pyproject.toml --format json --output sbom.json
           else
             echo "ERROR: No dependency files found!"
             echo "Available files in root:"
