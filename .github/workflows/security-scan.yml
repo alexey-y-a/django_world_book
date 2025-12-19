@@ -169,4 +169,3 @@ jobs:
             echo "ERROR: Failed to upload SBOM"
             exit 1
           fi
-          
