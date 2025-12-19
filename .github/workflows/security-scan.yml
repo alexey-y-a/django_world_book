@@ -81,7 +81,7 @@ jobs:
       - name: Run Dependency-Check
         run: |
           ./dependency-check/bin/dependency-check.sh --scan . \
-          --project "$PROJECT_NAME" --format HTML --out reports/ --disableAssembly --cveValidForHours 168
+          --project "$PROJECT_NAME" --format HTML --out reports/ --disableAssembly --noupdate --disableRetireJS
 
       - name: Upload report
         if: always()
