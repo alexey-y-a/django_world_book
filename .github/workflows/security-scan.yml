@@ -33,14 +33,16 @@ jobs:
           echo "Looking for dependency files..."
           ls -la
           
-          # Простой и рабочий способ
+          if [ -f "sbom.json" ]; then
+            echo "Removing existing sbom.json..."
+            rm -f sbom.json
+          fi
+          
           echo "Generating SBOM from requirements.txt..."
           if [ -f "requirements.txt" ]; then
-            # Старый синтаксис v3 - ГАРАНТИРОВАННО работает
             cyclonedx-py -r -i requirements.txt --format json --output sbom.json
           else
             echo "ERROR: requirements.txt not found!"
-            # Создаем минимальный requirements.txt если нет
             echo "Django>=4.0" > requirements.txt
             cyclonedx-py -r -i requirements.txt --format json --output sbom.json
           fi
