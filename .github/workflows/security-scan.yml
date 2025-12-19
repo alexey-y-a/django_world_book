@@ -112,7 +112,7 @@ jobs:
   upload-to-dtrack:
     runs-on: ubuntu-latest
     needs: generate-sbom
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+    if: github.base_ref == 'refs/heads/main'
     
     steps:
       - uses: actions/checkout@v4
