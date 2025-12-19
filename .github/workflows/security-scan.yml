@@ -116,6 +116,21 @@ jobs:
           fi
           
           echo "File size: $(wc -l < sbom.json) lines"
+          echo "First 3 lines:"
+          head -3 sbom.json
+          
+          if [ ! -s "sbom.json" ]; then
+            echo "ERROR: sbom.json is empty!"
+            exit 1
+          fi
+          
+          if [ -z "$DTRACK_API_KEY" ]; then
+            echo "ERROR: DTRACK_API_KEY is not set!"
+            exit 1
+          fi
+          
+          echo "Using DTrack URL: $DTRACK_URL"
+          echo "API Key (first 10 chars): ${DTRACK_API_KEY:0:10}..."
           
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$DTRACK_URL" \
             -H "X-Api-Key: $DTRACK_API_KEY" \
