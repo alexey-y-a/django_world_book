@@ -80,7 +80,8 @@ jobs:
 
       - name: Run Dependency-Check
         run: |
-          ./dependency-check/bin/dependency-check.sh --scan . --project "$PROJECT_NAME" --format HTML --out reports/ --disableAssembly
+          ./dependency-check/bin/dependency-check.sh --scan . \
+          --project "$PROJECT_NAME" --format HTML --out reports/ --disableAssembly --noupdate
 
       - name: Upload report
         if: always()
