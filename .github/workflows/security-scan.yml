@@ -3,6 +3,8 @@ name: SBOM and Security Scan
 on:
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
 
 env:
   DTRACK_URL: "http://185.55.56.234:8081/api/v1/bom"
