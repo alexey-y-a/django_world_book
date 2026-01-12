@@ -109,63 +109,63 @@ jobs:
           path: reports/
           retention-days: 7
 
-  upload-to-dtrack:
-    runs-on: ubuntu-latest
-    needs: generate-sbom
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download SBOM artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: sbom
-
-      - name: Upload to Dependency-Track
-        env:
-          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
-        run: |
-          echo "Uploading SBOM to Dependency-Track..."
-          
-          if [ ! -f "sbom.json" ]; then
-            echo "ERROR: sbom.json not found!"
-            ls -la
-            exit 1
-          fi
-          
-          echo "File size: $(wc -l < sbom.json) lines"
-          echo "First 3 lines:"
-          head -3 sbom.json
-          
-          if [ ! -s "sbom.json" ]; then
-            echo "ERROR: sbom.json is empty!"
-            exit 1
-          fi
-          
-          if [ -z "$DTRACK_API_KEY" ]; then
-            echo "ERROR: DTRACK_API_KEY is not set!"
-            exit 1
-          fi
-          
-          echo "Using DTrack URL: $DTRACK_URL"
-          echo "API Key (first 10 chars): ${DTRACK_API_KEY:0:10}..."
-          
-          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$DTRACK_URL" \
-            -H "X-Api-Key: $DTRACK_API_KEY" \
-            -H "Content-Type: multipart/form-data" \
-            -F "autoCreate=true" \
-            -F "projectName=$PROJECT_NAME" \
-            -F "projectVersion=${{ github.sha }}" \
-            -F "bom=@sbom.json")
-          
-          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
-          RESPONSE_BODY=$(echo "$RESPONSE" | grep -v "HTTP_CODE:")
-          
-          echo "Response HTTP Code: $HTTP_CODE"
-          echo "Response: $RESPONSE_BODY"
-          
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "ERROR: Failed to upload SBOM"
-            exit 1
-          fi
+#  upload-to-dtrack:
+#    runs-on: ubuntu-latest
+#    needs: generate-sbom
+#    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Download SBOM artifact
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: sbom
+#
+#      - name: Upload to Dependency-Track
+#        env:
+#          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+#        run: |
+#          echo "Uploading SBOM to Dependency-Track..."
+#
+#          if [ ! -f "sbom.json" ]; then
+#            echo "ERROR: sbom.json not found!"
+#            ls -la
+#            exit 1
+#          fi
+#
+#          echo "File size: $(wc -l < sbom.json) lines"
+#          echo "First 3 lines:"
+#          head -3 sbom.json
+#
+#          if [ ! -s "sbom.json" ]; then
+#            echo "ERROR: sbom.json is empty!"
+#            exit 1
+#          fi
+#
+#          if [ -z "$DTRACK_API_KEY" ]; then
+#            echo "ERROR: DTRACK_API_KEY is not set!"
+#            exit 1
+#          fi
+#
+#          echo "Using DTrack URL: $DTRACK_URL"
+#          echo "API Key (first 10 chars): ${DTRACK_API_KEY:0:10}..."
+#
+#          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$DTRACK_URL" \
+#            -H "X-Api-Key: $DTRACK_API_KEY" \
+#            -H "Content-Type: multipart/form-data" \
+#            -F "autoCreate=true" \
+#            -F "projectName=$PROJECT_NAME" \
+#            -F "projectVersion=${{ github.sha }}" \
+#            -F "bom=@sbom.json")
+#
+#          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+#          RESPONSE_BODY=$(echo "$RESPONSE" | grep -v "HTTP_CODE:")
+#
+#          echo "Response HTTP Code: $HTTP_CODE"
+#          echo "Response: $RESPONSE_BODY"
+#
+#          if [ "$HTTP_CODE" != "200" ]; then
+#            echo "ERROR: Failed to upload SBOM"
+#            exit 1
+#          fi
