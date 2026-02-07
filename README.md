@@ -62,17 +62,17 @@ pip install -r requirements.txt
 5. Применить миграции:
 ```bash
 cd WebBooks
-python manage.py migrate
+python3 manage.py migrate
 ```
 
 6. Создать суперпользователя (для доступа как админ):
 ```bash
-python manage.py createsuperuser
+python3 manage.py createsuperuser
 ```
 
-7. Запустить сервер (нужно перейти в `WebBooks/WebBooks`):
+7. Запустить сервер (нужно перейти в `WebBooks`):
 ```bash
-python manage.py runserver
+python3 manage.py runserver
 ```
 Откройте браузер и перейдите по адресу:
 http://127.0.0.1:8000
